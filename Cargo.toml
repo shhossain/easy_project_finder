@@ -1,0 +1,12 @@
+[package]
+name = "easy_project_finder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.1.6", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+fuzzy-matcher = "0.3.7"
+directories = "5.0"
+
