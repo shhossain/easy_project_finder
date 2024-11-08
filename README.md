@@ -1,5 +1,5 @@
 # Easy Project Finder
-
+![easy_project_finde](https://github.com/user-attachments/assets/f768bb4e-946e-45e7-93b1-ba85b8efd37a)
 `easy_project_finder` is a command-line tool for quickly locating project directories using fuzzy search. It is designed to help developers and teams manage and navigate large codebases or folder structures efficiently.
 
 ## Features
