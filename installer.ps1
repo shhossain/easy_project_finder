@@ -29,28 +29,25 @@ try {
 
     # PATH environment variable handling
     try {
+        # Update System PATH
         $currentSystemPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
         if ($currentSystemPath -notlike "*$targetDir*") {
-            # Ensure proper PATH format
-            if ($currentSystemPath.EndsWith(';')) {
-                $newSystemPath = $currentSystemPath + "$targetDir"
-            } else {
-                $newSystemPath = $currentSystemPath + ";$targetDir"
-            }
-            
+            $newSystemPath = $currentSystemPath + $(if ($currentSystemPath.EndsWith(';')) { '' } else { ';' }) + $targetDir
             [Environment]::SetEnvironmentVariable("Path", $newSystemPath, [EnvironmentVariableTarget]::Machine)
-            
-            # Refresh current session's PATH
-            $env:Path = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-            
-            # Verify PATH update
-            $updatedPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-            if ($updatedPath -notlike "*$targetDir*") {
-                throw "Failed to update PATH environment variable"
-            }
+        }
+
+        # Update User PATH
+        $currentUserPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+        if ($currentUserPath -notlike "*$targetDir*") {
+            $newUserPath = $currentUserPath + $(if ($currentUserPath.EndsWith(';')) { '' } else { ';' }) + $targetDir
+            [Environment]::SetEnvironmentVariable("Path", $newUserPath, [EnvironmentVariableTarget]::User)
         }
         
-        Write-Host "PATH environment variable updated successfully"
+        # Refresh current session's PATH
+        $env:Path = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";" + 
+                    [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+        
+        Write-Host "PATH environment variables updated successfully"
     } catch {
         Write-Host "Error updating PATH: $_"
         throw
@@ -89,12 +86,15 @@ try {
         $profileContent = ""
     }
 
-    if ($profileContent -notmatch 'function p\s*{') {
-        Add-Content -Path $profilePath -Value $functionCode
-        Write-Host "Function 'p' added to PowerShell profile"
-    } else {
-        Write-Host "Function 'p' already exists in PowerShell profile"
+    # Remove existing p function if found
+    if ($profileContent -match '(?s)function p\s*{.*?}') {
+        $profileContent = $profileContent -replace '(?s)function p\s*{.*?}', ''
+        Set-Content -Path $profilePath -Value $profileContent.Trim()
     }
+
+    # Add the new function
+    Add-Content -Path $profilePath -Value $functionCode
+    Write-Host "Function 'p' updated in PowerShell profile"
 
     Write-Host "Installation completed successfully."
 
