@@ -86,10 +86,10 @@ try {
         $profileContent = ""
     }
 
-    # Remove existing p function if found
-    if ($profileContent -match '(?s)function p\s*{.*?}') {
-        $profileContent = $profileContent -replace '(?s)function p\s*{.*?}', ''
-        Set-Content -Path $profilePath -Value $profileContent.Trim()
+    # Remove existing p function if found using improved regex
+    if ($profileContent -match 'function\s+p\s*\{[\s\S]*?\}') {
+        $profileContent = $profileContent -replace 'function\s+p\s*\{[\s\S]*?\}', ''
+        Set-Content -Path $profilePath -Value ($profileContent -replace '^\s*$\n|\r', '' -replace '\s+$', '')
     }
 
     # Add the new function
