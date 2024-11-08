@@ -1,5 +1,6 @@
 name: Create Release
 
+
 on:
   push:
     branches:
@@ -14,9 +15,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      
+      - name: Bump version and push tag
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.2
         with:
-          fetch-depth: 0
+          github_token: ${{ secrets.GITHUB_TOKEN }}    
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -25,24 +30,16 @@ jobs:
           target: x86_64-pc-windows-msvc
           profile: minimal
 
-      - name: Bump version and create tag
-        id: tag
-        uses: anothrNick/github-tag-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-
       - name: Build Release
         run: cargo build --release
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ steps.tag.outputs.new_tag }}
-          release_name: Release ${{ steps.tag.outputs.new_tag }}
-          draft: false
-          prerelease: false
+          tag: ${{ steps.tag.outputs.new_tag }}
+          name: Release ${{ steps.tag.outputs.new_tag }}
+          body: ${{ steps.tag.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Executable
