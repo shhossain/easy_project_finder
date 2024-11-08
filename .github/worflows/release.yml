@@ -1,0 +1,54 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_and_release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+          profile: minimal
+
+      - name: Bump version and create tag
+        id: tag
+        uses: anothrNick/github-tag-action@v1.36.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag_prefix: "v"
+
+      - name: Build Release
+        run: cargo build --release
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.new_tag }}
+          release_name: Release ${{ steps.tag.outputs.new_tag }}
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Executable
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/release/easy_project_finder.exe
+          asset_name: easy_project_finder.exe
+          asset_content_type: application/octet-stream

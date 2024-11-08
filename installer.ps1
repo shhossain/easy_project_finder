@@ -1,7 +1,8 @@
 # Check for administrator privileges
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$PSCommandPath`"" -Verb RunAs
-    exit
+    $scriptPath = $PSCommandPath
+    Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$scriptPath`"" -Verb RunAs
+    # Removed 'exit' to prevent automatic exit
 }
 
 try {
@@ -11,24 +12,27 @@ try {
     $targetDir = "C:\Program Files\easy_project_finder"
     $exePath = Join-Path -Path $targetDir -ChildPath $exeName
 
-    # Create the target directory if it doesn't exist
-    if (-not (Test-Path -Path $targetDir)) {
-        New-Item -ItemType Directory -Path $targetDir
-    }
-
     # Check if the URL exists
     try {
         $urlResponse = Invoke-WebRequest -Uri $latestReleaseUrl -Method Head -ErrorAction Stop
     } catch {
         throw "The URL $latestReleaseUrl does not exist or is unreachable."
     }
+    # Create the target directory if it doesn't exist
+    if (-not (Test-Path -Path $targetDir)) {
+        New-Item -ItemType Directory -Path $targetDir
+    }
+
 
     # Download the executable
     Invoke-WebRequest -Uri $latestReleaseUrl -OutFile $exePath
 
-    # Add the target directory to the system PATH
-    $env:Path += ";$targetDir"
-    [Environment]::SetEnvironmentVariable("Path", $env:Path, [EnvironmentVariableTarget]::Machine)
+    # Correctly add the target directory to the system PATH
+    $currentSystemPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+    if (-not ($currentSystemPath.Split(';') -contains $targetDir)) {
+        $newSystemPath = $currentSystemPath + ";$targetDir"
+        [Environment]::SetEnvironmentVariable("Path", $newSystemPath, [EnvironmentVariableTarget]::Machine)
+    }
 
     # Define the PowerShell function to be added to the profile
     $functionCode = @"
@@ -41,7 +45,7 @@ try {
             }
         }
     }
-    "@
+"@
 
     # Get the path to the user's PowerShell profile
     $profilePath = $PROFILE
@@ -60,5 +64,5 @@ try {
 
 } catch {
     Write-Host "An error occurred: $_"
-    exit 1
+    # Removed 'exit 1' to prevent automatic exit after error
 }
