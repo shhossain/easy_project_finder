@@ -66,10 +66,11 @@ try {
     $functionCode = @"
 function p {
     `$out = easy_project_finder.exe `$args
-    `$out
     if (`$out) {
         if ((`$out -is [string]) -and (Test-Path -Path `$out)) {
             Set-Location `$out
+        } else {
+            `$out 
         }
     }
 }
