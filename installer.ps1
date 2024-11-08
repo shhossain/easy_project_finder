@@ -96,6 +96,11 @@ try {
     Add-Content -Path $profilePath -Value $functionCode
     Write-Host "Function 'p' updated in PowerShell profile"
 
+    # Reload the profile
+    . $profilePath
+    Write-Host "PowerShell profile reloaded"
+
+
     Write-Host "Installation completed successfully."
 
 } catch {

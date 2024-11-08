@@ -47,7 +47,7 @@ This command will search for directories matching "my_project" and, if found, au
 
 Here’s a summary of some useful command-line options:
 
-- `--config <KEY=VALUE>`: Set configuration options like `root`, `max_results`, `only_dirs`.
+- `--config <KEY=VALUE>`: Set configuration options like `root`, `max_results`, `only_dirs`, `default_root`.
   - Example: `p --config root="C:\Projects"`
 - `--show-config`: Display the current configuration and its file location.
 - `--dirs-only`: Filter results to only directories.
