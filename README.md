@@ -14,7 +14,7 @@
 
 ## Installation
 
-To install `easy_project_finder` on Windows, run the following PowerShell command:
+To install `easy_project_finder` on Windows, run the following PowerShell command as an administrator:
 
 ```powershell
 iwr -useb https://raw.githubusercontent.com/shhossain/easy_project_finder/main/installer.ps1 | iex

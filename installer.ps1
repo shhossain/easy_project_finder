@@ -14,8 +14,12 @@ try {
 
     # Check if the URL exists
     try {
-        $urlResponse = Invoke-WebRequest -Uri $latestReleaseUrl -Method Head -ErrorAction Stop
-    } catch {
+        $Response = Invoke-WebRequest -Uri $latestReleaseUrl -Method Head -ErrorAction Stop
+        if ($Response.StatusCode -gt 399) {
+            throw "The URL $latestReleaseUrl does not exist or is unreachable."
+        }
+    }
+    catch {
         throw "The URL $latestReleaseUrl does not exist or is unreachable."
     }
     # Create the target directory if it doesn't exist
@@ -23,11 +27,15 @@ try {
         New-Item -ItemType Directory -Path $targetDir
     }
 
+    # Download the latest release
+    try {
+        Invoke-WebRequest -Uri $latestReleaseUrl -OutFile $exePath -ErrorAction Stop
+    }
+    catch {
+        throw "Failed to download the latest release from $latestReleaseUrl. $_"
+    }
 
-    # Download the executable
-    Invoke-WebRequest -Uri $latestReleaseUrl -OutFile $exePath
-
-    # PATH environment variable handling
+    # # PATH environment variable handling
     try {
         # Update System PATH
         $currentSystemPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
@@ -45,25 +53,26 @@ try {
         
         # Refresh current session's PATH
         $env:Path = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";" + 
-                    [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+        [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
         
         Write-Host "PATH environment variables updated successfully"
-    } catch {
+    }
+    catch {
         Write-Host "Error updating PATH: $_"
         throw
     }
 
     # Define the PowerShell function to be added to the profile
     $functionCode = @"
-    function p {
-        `$out = easy_project_finder.exe `$args
-        `$out
-        if (`$out) {
-            if ((`$out -is [string]) -and (Test-Path -Path `$out)) {
-                cd `$out
-            }
+function p {
+    `$out = easy_project_finder.exe `$args
+    `$out
+    if (`$out) {
+        if ((`$out -is [string]) -and (Test-Path -Path `$out)) {
+            Set-Location `$out
         }
     }
+}
 "@
 
     # Get the path to the user's PowerShell profile
@@ -88,22 +97,72 @@ try {
 
     # Remove existing p function if found using improved regex
     if ($profileContent -match 'function\s+p\s*\{[\s\S]*?\}') {
-        $profileContent = $profileContent -replace 'function\s+p\s*\{[\s\S]*?\}', ''
-        Set-Content -Path $profilePath -Value ($profileContent -replace '^\s*$\n|\r', '' -replace '\s+$', '')
-    }
+        if (-not ($profileContent -match 'function\s+p\s*\{[\s\S]*?easy_project_finder.exe[\s\S]*?\}')) {
+            Write-Host "Function 'p' is conflicting with an existing function in the PowerShell profile."
+            # for ($i = 2; $i -lt 10; $i++) {
+            #     $newFunctionName = "p$i"
+            #     $newFunctionNamePat = "function\s+$newFunctionName\s*\{[\s\S]*?EASY PROJECT FINDER FUNCTION[\s\S]*?\}"
+            #     if (-not $profileContent -match "function\s+$newFunctionName\s*\{[\s\S]*?\}") {
+            #         $functionCode = $functionCode -replace 'function\s+p\s*\{', "function $newFunctionName {"
+            #         Write-Host "Renaming 'p' function to '$newFunctionName' to avoid conflict"
+            #         break
+            #     } else {
+            #         if ($profileContent -match $newFunctionNamePat) {
 
-    # Add the new function
-    Add-Content -Path $profilePath -Value $functionCode
-    Write-Host "Function 'p' updated in PowerShell profile"
+            #         }
+            #     }
+            # }
+        }
+        else {
+            Write-Host "Function 'p' already exists in the PowerShell profile. Updating the existing 'p' function."
+            $profileContent = $profileContent -replace 'function\s+p\s*\{[\s\S]*?\}', ''
+    
+            # Remove remaining } that might be left after removing the function
+            $stack = New-Object System.Collections.Stack
+            $indicesToRemove = @()
+            for ($i = 0; $i -lt $profileContent.Length; $i++) {
+                $char = $profileContent[$i]
+                if ($char -eq '{') {
+                    $stack.Push($i)
+                }
+                elseif ($char -eq '}') {
+                    if ($stack.Count -eq 0) {
+                        $indicesToRemove += $i
+                    }
+                    else {
+                        $stack.Pop()
+                    }
+                }
+            }
+    
+            # Remove unmatched } in reverse order to maintain correct indexing
+            foreach ($index in $indicesToRemove | Sort-Object -Descending) {
+                $profileContent = $profileContent.Remove($index, 1)
+            }
+    
+            # Remove any leading or trailing whitespace
+            $profileContent = $profileContent.Trim()
+
+            $profileContent += "`n`n$functionCode"
+    
+            # Write the updated profile content
+            Set-Content -Path $profilePath -Value $profileContent
+        }
+    }
+    else {
+        # Add the function to the profile
+        Add-Content -Path $profilePath -Value $functionCode
+        Write-Host "Function 'p' added to PowerShell profile"
+    }
 
     # Reload the profile
     . $profilePath
     Write-Host "PowerShell profile reloaded"
 
-
     Write-Host "Installation completed successfully."
 
-} catch {
+}
+catch {
     Write-Host "An error occurred: $_"
     # Removed 'exit 1' to prevent automatic exit after error
 }
