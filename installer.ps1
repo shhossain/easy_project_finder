@@ -56,11 +56,11 @@ try {
     # Define the PowerShell function to be added to the profile
     $functionCode = @"
     function p {
-        `\$out = easy_project_finder.exe `\$args
-        `\$out
-        if (`\$out) {
-            if ((`\$out -is [string]) -and (Test-Path -Path `\$out)) {
-                cd `\$out
+        `$out = easy_project_finder.exe `$args
+        `$out
+        if (`$out) {
+            if ((`$out -is [string]) -and (Test-Path -Path `$out)) {
+                cd `$out
             }
         }
     }
