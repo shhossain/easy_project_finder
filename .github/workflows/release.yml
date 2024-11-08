@@ -27,10 +27,10 @@ jobs:
 
       - name: Bump version and create tag
         id: tag
-        uses: anothrNick/github-tag-action@v1.36.0
+        uses: anothrNick/github-tag-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag_prefix: "v"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
 
       - name: Build Release
         run: cargo build --release
