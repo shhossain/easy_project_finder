@@ -64,15 +64,10 @@ jobs:
           body: ${{ steps.tag.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Upload Executable
-        # uses: actions/upload-release-asset@v1
-        # with:
-        #   upload_url: ${{ steps.create_release.outputs.upload_url }}
-        #   asset_path: ./target/release/easy_project_finder.exe
-        #   asset_name: easy_project_finder.exe
-        #   asset_content_type: application/octet-stream
-
       - name: Upload Executable
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.new_tag }}
+          name: easy_project_finder.exe
           files: ./target/release/easy_project_finder.exe
+          prerelease: false
